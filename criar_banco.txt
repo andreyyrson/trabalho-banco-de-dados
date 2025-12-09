@@ -12,75 +12,76 @@ CREATE TABLE epidemiologia.origem (origem_id SERIAL PRIMARY KEY, nome TEXT NOT N
 CREATE TABLE epidemiologia.evolucao (evolucao_id SERIAL PRIMARY KEY, nome TEXT NOT NULL UNIQUE);
 CREATE TABLE epidemiologia.classificacao (classificacao_id SERIAL PRIMARY KEY, nome TEXT NOT NULL UNIQUE);
 CREATE TABLE epidemiologia.estrategia_covid (estrategia_id SERIAL PRIMARY KEY, codigo TEXT NOT NULL UNIQUE);
-CREATE TABLE epidemiologia.laboratorio_primeira_dose (lab1_id SERIAL PRIMARY KEY, nome TEXT NOT NULL UNIQUE);
-CREATE TABLE epidemiologia.laboratorio_segunda_dose (lab2_id SERIAL PRIMARY KEY, nome TEXT NOT NULL UNIQUE);
+CREATE TABLE epidemiologia.laboratorio (laboratorio_id SERIAL PRIMARY KEY, nome TEXT NOT NULL UNIQUE);
+CREATE TABLE epidemiologia.lote (lote_id SERIAL PRIMARY KEY, codigo TEXT NOT NULL UNIQUE);
+CREATE TABLE epidemiologia.sintoma (sintoma_id SERIAL PRIMARY KEY, descricao TEXT NOT NULL UNIQUE);
 CREATE TABLE epidemiologia.resultado_teste1 (resultado1_id SERIAL PRIMARY KEY, codigo TEXT NOT NULL UNIQUE);
 
 -- Dimensões Booleanas
 CREATE TABLE epidemiologia.profissional_saude (profissional_saude_id SERIAL PRIMARY KEY, status BOOLEAN NOT NULL UNIQUE);
 CREATE TABLE epidemiologia.profissional_seguranca (profissional_seguranca_id SERIAL PRIMARY KEY, status BOOLEAN NOT NULL UNIQUE);
 
--- Dimensões Geográficas de Residência
+-- Dimensões Geográficas (ÚNICA tabela para Estado e Município)
 CREATE TABLE epidemiologia.estado (
-    estado_id SERIAL PRIMARY KEY, sigla TEXT NOT NULL UNIQUE, codigo_ibge INTEGER NOT NULL UNIQUE
-);
-CREATE TABLE epidemiologia.municipio (
-    municipio_id SERIAL PRIMARY KEY, nome TEXT NOT NULL, codigo_ibge INTEGER NOT NULL UNIQUE, estado_id INT NOT NULL REFERENCES epidemiologia.estado(estado_id)
+estado_id SERIAL PRIMARY KEY, 
+sigla TEXT NOT NULL UNIQUE, 
+codigo_ibge INTEGER NOT NULL UNIQUE
 );
 
--- Dimensões Geográficas de Notificação
-CREATE TABLE epidemiologia.estado_notificacao (
-    estado_notificacao_id SERIAL PRIMARY KEY, sigla TEXT NOT NULL UNIQUE, codigo_ibge INTEGER NOT NULL UNIQUE
-);
-CREATE TABLE epidemiologia.municipio_notificacao (
-    municipio_notificacao_id SERIAL PRIMARY KEY, nome TEXT NOT NULL, codigo_ibge INTEGER NOT NULL UNIQUE, estado_notificacao_id INT NOT NULL 
-        REFERENCES epidemiologia.estado_notificacao(estado_notificacao_id)
+CREATE TABLE epidemiologia.municipio (
+municipio_id SERIAL PRIMARY KEY, 
+nome TEXT NOT NULL, 
+codigo_ibge INTEGER NOT NULL UNIQUE, 
+estado_id INT NOT NULL REFERENCES epidemiologia.estado(estado_id)
 );
 
 ---------------------------------------------------------
 -- CRIAÇÃO DA TABELA FATO (CONTÉM AS CHAVES E MEDIDAS)
 ---------------------------------------------------------
 CREATE TABLE epidemiologia.notificacao (
-    notificacao_id SERIAL PRIMARY KEY,
-    sexo_id INT REFERENCES epidemiologia.sexo(sexo_id),
-    raca_id INT REFERENCES epidemiologia.raca(raca_id),
-    profissional_saude_id INT REFERENCES epidemiologia.profissional_saude(profissional_saude_id),
-    profissional_seguranca_id INT REFERENCES epidemiologia.profissional_seguranca(profissional_seguranca_id),
-    estado_residencia_id INT REFERENCES epidemiologia.estado(estado_id),
-    municipio_residencia_id INT REFERENCES epidemiologia.municipio(municipio_id),
-    estado_notificacao_id INT REFERENCES epidemiologia.estado_notificacao(estado_notificacao_id),
-    municipio_notificacao_id INT REFERENCES epidemiologia.municipio_notificacao(municipio_notificacao_id),
-    origem_id INT REFERENCES epidemiologia.origem(origem_id),
-    evolucao_id INT REFERENCES epidemiologia.evolucao(evolucao_id),
-    classificacao_id INT REFERENCES epidemiologia.classificacao(classificacao_id),
-    estrategia_id INT REFERENCES epidemiologia.estrategia_covid(estrategia_id),
-    lab1_id INT REFERENCES epidemiologia.laboratorio_primeira_dose(lab1_id),
-    lab2_id INT REFERENCES epidemiologia.laboratorio_segunda_dose(lab2_id),
-    resultado1_id INT REFERENCES epidemiologia.resultado_teste1(resultado1_id),
-    data_notificacao DATE,
-    data_inicio_sintomas DATE,
-    data_encerramento DATE,
-    data_primeira_dose DATE,
-    data_segunda_dose DATE,
-    data_coleta_teste1 DATE,
-    idade INT,
-    total_testes INT,
-    raw_line TEXT
+notificacao_id SERIAL PRIMARY KEY,
+sexo_id INT REFERENCES epidemiologia.sexo(sexo_id),
+raca_id INT REFERENCES epidemiologia.raca(raca_id),
+sintoma_id INT REFERENCES epidemiologia.sintoma(sintoma_id),
+profissional_saude_id INT REFERENCES epidemiologia.profissional_saude(profissional_saude_id),
+profissional_seguranca_id INT REFERENCES epidemiologia.profissional_seguranca(profissional_seguranca_id),
+estado_origem_id INT REFERENCES epidemiologia.estado(estado_id),
+municipio_origem_id INT REFERENCES epidemiologia.municipio(municipio_id),
+estado_notificacao_id INT REFERENCES epidemiologia.estado(estado_id),
+municipio_notificacao_id INT REFERENCES epidemiologia.municipio(municipio_id),
+origem_id INT REFERENCES epidemiologia.origem(origem_id),
+evolucao_id INT REFERENCES epidemiologia.evolucao(evolucao_id),
+classificacao_id INT REFERENCES epidemiologia.classificacao(classificacao_id),
+estrategia_id INT REFERENCES epidemiologia.estrategia_covid(estrategia_id),
+laboratorio_primeira_dose_id INT REFERENCES epidemiologia.laboratorio(laboratorio_id),
+laboratorio_segunda_dose_id INT REFERENCES epidemiologia.laboratorio(laboratorio_id),
+lote_primeira_dose_id INT REFERENCES epidemiologia.lote(lote_id),
+lote_segunda_dose_id INT REFERENCES epidemiologia.lote(lote_id),
+resultado1_id INT REFERENCES epidemiologia.resultado_teste1(resultado1_id),
+data_notificacao DATE,
+data_inicio_sintomas DATE,
+data_encerramento DATE,
+data_primeira_dose DATE,
+data_segunda_dose DATE,
+data_coleta_teste1 DATE,
+idade INT,
+total_testes INT,
+raw_line TEXT
 );
 
 ---------------------------------------------------------
 -- CRIAÇÃO DA TABELA DE STAGING (RECEBE OS DADOS BRUTOS)
 ---------------------------------------------------------
 CREATE TABLE epidemiologia.staging_dados (
-    sintomas TEXT, profissionalsaude TEXT, racacor TEXT, profissionalseguranca TEXT,
-    sexo TEXT, estado TEXT, estadoibge TEXT, municipio TEXT, municipioibge TEXT,
-    origem TEXT, estadonotificacao TEXT, municipionotificacao TEXT, municipionotificacaoibge TEXT,
-    evolucaocaso TEXT, classificacaofinal TEXT, codigoestrategiacovid TEXT, codigolocalrealizacaotestagem TEXT,
-    codigorecebeuvacina TEXT, codigolaboratorioprimeiradose TEXT, codigolaboratoriosegundadose TEXT,
-    loteprimeiradose TEXT, lotesegundadose TEXT, codigocontemcomunidadetradicional TEXT,
-    source_id TEXT, excluido TEXT, validado TEXT, codigodosesvacina TEXT, estadonotificacaoibge TEXT,
-    totaltestesrealizados TEXT, datanotificacao TEXT, datainiciosintomas TEXT, dataencerramento TEXT,
-    dataprimeiradose TEXT, datasegundadose TEXT, codigoestadoteste1 TEXT, codigotipoteste1 TEXT,
-    codigofabricanteteste1 TEXT, codigoresultadoteste1 TEXT, datacoletateste1,
-    idade TEXT, raw_line TEXT
+sintomas TEXT, profissionalsaude TEXT, racacor TEXT, profissionalseguranca TEXT,
+sexo TEXT, estado TEXT, estadoibge TEXT, municipio TEXT, municipioibge TEXT,
+origem TEXT, estadonotificacao TEXT, municipionotificacao TEXT, municipionotificacaoibge TEXT,
+evolucaocaso TEXT, classificacaofinal TEXT, codigoestrategiacovid TEXT, codigolocalrealizacaotestagem TEXT,
+codigorecebeuvacina TEXT, codigolaboratorioprimeiradose TEXT, codigolaboratoriosegundadose TEXT,
+loteprimeiradose TEXT, lotesegundadose TEXT, codigocontemcomunidadetradicional TEXT,
+source_id TEXT, excluido TEXT, validado TEXT, codigodosesvacina TEXT, estadonotificacaoibge TEXT,
+totaltestesrealizados TEXT, datanotificacao TEXT, datainiciosintomas TEXT, dataencerramento TEXT,
+dataprimeiradose TEXT, datasegundadose TEXT, codigoestadoteste1 TEXT, codigotipoteste1 TEXT,
+codigofabricanteteste1 TEXT, codigoresultadoteste1 TEXT, datacoletateste1 TEXT,
+idade TEXT, raw_line TEXT
 );
